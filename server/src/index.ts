@@ -104,7 +104,14 @@ app.use('/api/admin', protect, adminOnly, adminRoutes);
 app.use('/api/chat', chatRoutes);
 
 const PORT = process.env.PORT || 4000;
-
+app.get('/debug', (req, res) => {
+  res.status(200).json({
+    status: 'alive',
+    env: process.env.NODE_ENV,
+    mongoUriExists: !!process.env.MONGO_URI,
+    message: 'Backend reached this route'
+  });
+});
 mongoose
   .connect(process.env.MONGO_URI!)
   .then(() => {
