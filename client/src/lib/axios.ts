@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://cinema-mern-server.vercel.app/api',
+  baseURL: 'https://cinema-mern.vercel.app/',
   headers: {
     'Content-Type': 'application/json',
   },
