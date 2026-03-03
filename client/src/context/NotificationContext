@@ -1,0 +1,62 @@
+// src/context/NotificationContext.tsx
+import { createContext, useContext, useEffect } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+
+const SOCKET_URL = 'http://localhost:4000';
+
+type NotificationContextType = {
+  socket: Socket | null;
+};
+
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const socket = useMemo(() => io(SOCKET_URL), []);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Global Socket.IO connected');
+    });
+
+    // Global new movie notification
+    socket.on('new-movie', ({ movie }: { movie: { title: string; _id: string } }) => {
+      toast.success(`New movie added: ${movie.title}`, {
+        description: 'Browse it now!',
+        action: {
+          label: 'View',
+          onClick: () => window.location.href = `/movies/${movie._id}`,
+        },
+        duration: 8000,
+      });
+    });
+
+    // Global new showtime notification
+    socket.on('new-showtime', ({ showtime }: { showtime: { movie: string; startTime: string } }) => {
+      toast.info('New showtime scheduled!', {
+        description: `Starts at ${format(new Date(showtime.startTime), 'PPP p')}`,
+        duration: 8000,
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+      console.log('Global Socket.IO disconnected');
+    };
+  }, [socket]);
+
+  return (
+    <NotificationContext.Provider value={{ socket }}>
+      {children}
+    </NotificationContext.Provider>
+  );
+}
+
+export function useNotification() {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotification must be used within NotificationProvider');
+  }
+  return context;
+}
