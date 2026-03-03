@@ -67,7 +67,20 @@ export const notifyNewShowtime = (showtime: any) => {
   console.log('Broadcast: New showtime added', showtime._id);
 };
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({
+  origin: [
+    'http://localhost:5173',                     // local Vite
+    'http://localhost:3000',                     // local CRA fallback
+    'https://merry-creponne-f88dd5.netlify.app', // your Netlify URL — change if different
+    '*'                                          // TEMP for testing — remove later
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+// Explicitly handle preflight OPTIONS (fixes some CORS issues)
+app.options('*', cors());
 app.use(express.json());
 
 // Cleanup pending bookings every 5 minutes (expire if showtime < 12h away)
