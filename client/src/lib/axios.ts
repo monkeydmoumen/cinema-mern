@@ -1,49 +1,38 @@
-// src/lib/axios.ts — PRODUCTION SAFE VERSION
-import axios from "axios";
-
-/* ================= API URL ================= */
-
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : "http://localhost:4000/api";
-
-/* =========================================== */
+// src/lib/axios.ts
+import axios from 'axios';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: 'http://localhost:4000/api',
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
-  withCredentials: true, // 🔥 required for cookies + auth
 });
 
-/* ================= TOKEN ATTACH ================= */
-
+// Request interceptor: always read fresh from localStorage (no caching issues)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-
+    const token = localStorage.getItem('token'); // read every time — safe & reliable
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
+      // Optional: remove header if no token (cleaner)
       delete config.headers.Authorization;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-/* ================= GLOBAL ERROR HANDLING ================= */
-
+// Optional: response interceptor to handle 401 globally (logout on invalid token)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+      // Token invalid/expired → logout
+      localStorage.removeItem('token');
+      window.location.href = '/login'; // or use navigate from react-router
+      // You can also show toast: toast.error('Session expired. Please login again.');
     }
-
     return Promise.reject(error);
   }
 );

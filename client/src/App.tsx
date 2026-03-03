@@ -1,4 +1,4 @@
-// src/App.tsx — PRODUCTION FIXED VERSION
+// src/App.tsx — UPDATED: global Socket.IO notifications for new movie/showtime
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -22,53 +22,32 @@ import MyTickets from './pages/public/MyTickets';
 import Home from './pages/public/Home';
 import MovieChatPage from './pages/public/MovieChatPage';
 
-/* ============================= */
-/* ✅ PRODUCTION SOCKET URL */
-/* ============================= */
-
-const SOCKET_URL =
-  import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace('/api', '')
-    : 'http://localhost:4000';
+const SOCKET_URL = 'http://localhost:4000'; // your backend URL
 
 function App() {
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      withCredentials: true,
-      transports: ['websocket'],
-    });
+    const socket = io(SOCKET_URL);
 
-    /* ============================= */
-    /* LISTEN NEW MOVIE */
-    /* ============================= */
-
+    // Listen for new movie created by admin
     socket.on('new-movie', ({ movie }: { movie: any }) => {
-      toast.success(`🎬 New movie added: ${movie.title}`, {
-        description: 'Check it now!',
+      toast.success(`New movie added: ${movie.title}`, {
+        description: 'Browse it now in the movies list!',
         duration: 8000,
         action: {
           label: 'View Movies',
-          onClick: () => (window.location.href = '/movies'),
+          onClick: () => window.location.href = '/movies',
         },
       });
     });
 
-    /* ============================= */
-    /* LISTEN NEW SHOWTIME */
-    /* ============================= */
-
+    // Listen for new showtime created by admin
     socket.on('new-showtime', ({ showtime }: { showtime: any }) => {
-      toast.info('🎟 New showtime scheduled!', {
-        description: `Movie: ${
-          showtime.movie?.title || 'Unknown'
-        } at ${new Date(showtime.startTime).toLocaleString()}`,
+      toast.info(`New showtime scheduled!`, {
+        description: `Movie: ${showtime.movie?.title || 'New movie'} at ${new Date(showtime.startTime).toLocaleString()}`,
         duration: 8000,
         action: {
-          label: 'Check',
-          onClick: () =>
-            (window.location.href = `/movies/${
-              showtime.movie?._id || ''
-            }`),
+          label: 'Check Showtimes',
+          onClick: () => window.location.href = `/movies/${showtime.movie?._id || ''}`,
         },
       });
     });
@@ -85,17 +64,15 @@ function App() {
 
         <main className="container mx-auto px-4 py-6">
           <Routes>
-            <Route path="/" element={<Home />} />
-
+            <Route path="/" element={<Home/>} />
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/movies" element={<MoviesList />} />
             <Route path="/movies/:id" element={<MovieDetail />} />
             <Route path="/my-tickets" element={<MyTickets />} />
-            <Route path="/movies/:id/chat" element={<MovieChatPage />} />
-
-            {/* Protected routes */}
+<Route path="/movies/:id/chat" element={<MovieChatPage />} />
+            {/* Protected routes (user + admin) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<Profile />} />
 
@@ -109,14 +86,7 @@ function App() {
               </Route>
             </Route>
 
-            <Route
-              path="*"
-              element={
-                <div className="text-center py-20 text-2xl">
-                  404 - Page Not Found
-                </div>
-              }
-            />
+            <Route path="*" element={<div className="text-center py-20 text-2xl">404 - Page Not Found</div>} />
           </Routes>
         </main>
       </div>
