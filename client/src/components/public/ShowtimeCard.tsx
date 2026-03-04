@@ -1,17 +1,17 @@
-// src/components/public/ShowtimeCard.tsx — FIXED for Railway deploy
+// src/components/public/ShowtimeCard.tsx — FIXED: use api for seat fetch + correct Socket.IO
 import { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { io } from 'socket.io-client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import api from '@/lib/axios'; // uses your Railway baseURL
+import api from '@/lib/axios'; // ← uses your Railway baseURL
 import SeatGrid from './SeatGridticket';
 
 import type { Showtime } from '@/types/cinema';
 import { Loader2 } from 'lucide-react';
 
-const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your live Railway backend
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // your live Railway backend
 
 export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -20,7 +20,7 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
   const [loadingSeats, setLoadingSeats] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Reusable fetch function (uses api instance → Railway)
+  // Reusable fetch function (uses api → Railway)
   const fetchSeats = useCallback(async () => {
     setLoadingSeats(true);
     try {
@@ -53,7 +53,7 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
 
     socket.on('seats-updated', ({ showtimeId }: { showtimeId: string }) => {
       if (showtimeId === showtime._id) {
-        fetchSeats();
+        fetchSeats(); // Refresh using api (no relative fetch)
         toast.info('Seat availability updated live!');
       }
     });

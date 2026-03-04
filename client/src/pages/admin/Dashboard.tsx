@@ -1,8 +1,8 @@
-// pages/admin/Dashboard.tsx
+// src/pages/admin/Dashboard.tsx — POLISHED VERSION (optional)
 import { useEffect, useState } from 'react'
 import api from '@/lib/axios'
 import { toast } from 'sonner'
-import { Film, DoorOpen, Calendar } from 'lucide-react'
+import { Film, DoorOpen, Calendar, Loader2 } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -11,11 +11,14 @@ export default function Dashboard() {
     movies: 0,
     rooms: 0,
     showtimes: 0,
-    // future: ticketsSold: 0, etc.
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const [moviesRes, roomsRes, showtimesRes] = await Promise.all([
           api.get('/admin/movies'),
@@ -28,23 +31,47 @@ export default function Dashboard() {
           rooms: roomsRes.data.length,
           showtimes: showtimesRes.data.length,
         })
-      } catch (err) {
-        toast.error('Failed to load dashboard stats')
+      } catch (err: any) {
+        console.error('Failed to load dashboard stats:', err)
+        const msg = err.response?.data?.error || 'Could not load dashboard data'
+        toast.error(msg)
+        setError(msg)
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchStats()
   }, [])
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-emerald-400" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-950/30 border-red-800">
+        <CardContent className="p-8 text-center text-red-300">
+          <p className="text-lg font-medium">{error}</p>
+          <p className="text-sm mt-2">Try refreshing or check admin permissions</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-zinc-400 mt-1">Overview of your cinema operations</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-zinc-900/70 border-zinc-800">
+        <Card className="bg-zinc-900/70 border-zinc-800 hover:border-zinc-600 transition">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Movies</CardTitle>
             <Film className="h-5 w-5 text-emerald-400" />
@@ -55,7 +82,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/70 border-zinc-800">
+        <Card className="bg-zinc-900/70 border-zinc-800 hover:border-zinc-600 transition">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Screening Rooms</CardTitle>
             <DoorOpen className="h-5 w-5 text-emerald-400" />
@@ -66,7 +93,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/70 border-zinc-800">
+        <Card className="bg-zinc-900/70 border-zinc-800 hover:border-zinc-600 transition">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Scheduled Showtimes</CardTitle>
             <Calendar className="h-5 w-5 text-emerald-400" />
@@ -78,13 +105,16 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* You can add more sections later: recent activity, upcoming shows, etc. */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-        <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-        <p className="text-zinc-400">
-          Use the sidebar to manage movies, rooms, showtimes and more.
-        </p>
-      </div>
+      {/* Quick Actions / Placeholder */}
+      <Card className="bg-zinc-900/50 border-zinc-800">
+        <CardContent className="p-6">
+          <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
+          <p className="text-zinc-400">
+            Use the sidebar to manage movies, rooms, showtimes, bookings and more.
+          </p>
+          {/* Add buttons/links later if you want */}
+        </CardContent>
+      </Card>
     </div>
   )
 }

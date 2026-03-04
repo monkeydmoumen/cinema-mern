@@ -1,16 +1,13 @@
-// src/pages/admin/Showtimes.tsx
-"use client";
-
+// src/pages/admin/Showtimes.tsx — POLISHED VERSION (optional)
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Pencil, Trash2, CalendarIcon, Film, Users, Clock } from 'lucide-react';
+import { Pencil, Trash2, CalendarIcon, Film, Users, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import api from '@/lib/axios';
-import { useAuth } from '@/context/AuthContext';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +21,6 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 
-// Zod schema (your original working version)
 const showtimeSchema = z.object({
   movie: z.string().min(1, 'Please select a movie'),
   room: z.string().min(1, 'Please select a room'),
@@ -60,11 +56,12 @@ type Showtime = {
 };
 
 export default function Showtimes() {
-  const { isAuthenticated } = useAuth();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ShowtimeForm>({
     resolver: zodResolver(showtimeSchema),
@@ -77,9 +74,9 @@ export default function Showtimes() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     const loadData = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const [mRes, rRes, sRes] = await Promise.all([
           api.get('/admin/movies'),
@@ -90,11 +87,15 @@ export default function Showtimes() {
         setRooms(rRes.data || []);
         setShowtimes(sRes.data || []);
       } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Could not load data');
+        const msg = err.response?.data?.error || 'Could not load data';
+        toast.error(msg);
+        setError(msg);
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
-  }, [isAuthenticated]);
+  }, []);
 
   const onSubmit = async (data: ShowtimeForm) => {
     try {
@@ -156,6 +157,25 @@ export default function Showtimes() {
 
   const selectedMovie = movies.find(m => m._id === form.watch('movie'));
   const selectedRoom = rooms.find(r => r._id === form.watch('room'));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-950/30 border-red-800">
+        <CardContent className="p-8 text-center text-red-300">
+          <p className="text-lg font-medium">{error}</p>
+          <p className="text-sm mt-2">Try refreshing or check admin permissions</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-10 text-white">

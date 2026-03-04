@@ -1,10 +1,11 @@
-// src/components/public/SeatGrid.tsx — FULL UPDATED with built-in Socket.IO real-time updates
+// src/components/public/SeatGrid.tsx — FIXED: Railway URL + use api instance for fetch
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import api from '@/lib/axios'; // ← use your configured api (Railway baseURL)
 
-const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your live Railway backend
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← live Railway backend
 
 interface SeatGridProps {
   rows: number;
@@ -16,7 +17,7 @@ interface SeatGridProps {
   disabled?: boolean;
   maxSeats?: number;
   className?: string;
-  showtimeId?: string;           // NEW: required for real-time listening
+  showtimeId?: string;           // required for Socket.IO
 }
 
 export default function SeatGrid({
@@ -29,13 +30,13 @@ export default function SeatGrid({
   disabled = false,
   maxSeats = Infinity,
   className = '',
-  showtimeId,                    // pass this from parent!
+  showtimeId,
 }: SeatGridProps) {
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const [liveBookedSeats, setLiveBookedSeats] = useState<Set<string>>(initialBookedSeats);
   const [liveMySeats, setLiveMySeats] = useState<Set<string>>(initialMySeats);
 
-  // Sync initial props when they change
+  // Sync props when they change
   useEffect(() => {
     setLiveBookedSeats(initialBookedSeats);
     setLiveMySeats(initialMySeats);
@@ -45,7 +46,7 @@ export default function SeatGrid({
     setSelected(initialSelected);
   }, [initialSelected]);
 
-  // Real-time Socket.IO listener
+  // Real-time Socket.IO + live seat refresh
   useEffect(() => {
     if (!showtimeId) return;
 
@@ -55,19 +56,17 @@ export default function SeatGrid({
 
     socket.on('seats-updated', ({ showtimeId: updatedId }: { showtimeId: string }) => {
       if (updatedId === showtimeId) {
-        // Re-fetch latest booked seats (or you could receive delta in future)
+        // Refresh booked seats using api instance (no localhost!)
         const fetchLatest = async () => {
           try {
-            const res = await fetch(`/api/public/bookings/seats/${showtimeId}`);
-            const data = await res.json();
-            setLiveBookedSeats(new Set(data));
+            const res = await api.get(`/public/bookings/seats/${showtimeId}`);
+            setLiveBookedSeats(new Set(res.data));
+            toast.info('Seat availability updated live!');
           } catch (err) {
             console.error('Failed to refresh seats:', err);
           }
         };
         fetchLatest();
-
-        toast.info('Seat availability updated live');
       }
     });
 
@@ -125,19 +124,14 @@ export default function SeatGrid({
 
             let bgClass = 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:scale-105';
             let cursor = 'cursor-pointer';
-            
 
             if (disabled) {
               bgClass = 'bg-zinc-900 cursor-not-allowed text-zinc-600';
               cursor = 'cursor-not-allowed';
             } else if (isMy || isSelected) {
-              if (isSelected && !isMy) {
-                bgClass = 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50 scale-105';
-               
-              } else {
-                bgClass = 'bg-amber-700/80 text-amber-100 shadow-lg shadow-amber-900/40';
-                
-              }
+              bgClass = isSelected && !isMy
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50 scale-105'
+                : 'bg-amber-700/80 text-amber-100 shadow-lg shadow-amber-900/40';
               cursor = 'cursor-pointer';
             } else if (isOtherBooked) {
               bgClass = 'bg-red-900/70 cursor-not-allowed text-red-300/70';

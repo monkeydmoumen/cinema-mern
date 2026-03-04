@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Pencil, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+// src/pages/admin/Movies.tsx — POLISHED VERSION (optional enhancements)
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Pencil, Trash2, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
-import api from '@/lib/axios';
-import { useAuth } from '@/context/AuthContext';
+import api from '@/lib/axios'
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
-// Define available genres (you can expand this list)
+// Available genres (expand as needed)
 const AVAILABLE_GENRES = [
   'Action', 'Adventure', 'Animation', 'Comedy', 'Crime',
   'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance',
@@ -27,7 +27,7 @@ const movieSchema = z.object({
   posterUrl: z.string().url({ message: 'Must be a valid URL' }).optional().or(z.literal('')),
   trailerUrl: z.string().url({ message: 'Must be a valid URL' }).optional().or(z.literal('')),
   duration: z.number().int().positive().optional(),
-  genres: z.array(z.string()).optional(), // array of selected genres
+  genres: z.array(z.string()).optional(),
 });
 
 type MovieForm = z.infer<typeof movieSchema>;
@@ -43,9 +43,10 @@ type Movie = {
 };
 
 export default function Movies() {
-  const { isAuthenticated } = useAuth();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<MovieForm>({
     resolver: zodResolver(movieSchema),
@@ -60,18 +61,22 @@ export default function Movies() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     const loadMovies = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const { data } = await api.get('/admin/movies');
         setMovies(data || []);
       } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Could not load movies');
+        const msg = err.response?.data?.error || 'Could not load movies';
+        toast.error(msg);
+        setError(msg);
+      } finally {
+        setLoading(false);
       }
     };
     loadMovies();
-  }, [isAuthenticated]);
+  }, []);
 
   const onSubmit = async (data: MovieForm) => {
     try {
@@ -120,15 +125,33 @@ export default function Movies() {
     }
   };
 
-  // Helper to toggle genre selection
   const toggleGenre = (genre: string) => {
-    const currentGenres = form.watch('genres') || [];
-    if (currentGenres.includes(genre)) {
-      form.setValue('genres', currentGenres.filter(g => g !== genre));
+    const current = form.watch('genres') || [];
+    if (current.includes(genre)) {
+      form.setValue('genres', current.filter(g => g !== genre));
     } else {
-      form.setValue('genres', [...currentGenres, genre]);
+      form.setValue('genres', [...current, genre]);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-950/30 border-red-800">
+        <CardContent className="p-8 text-center text-red-300">
+          <p className="text-lg font-medium">{error}</p>
+          <p className="text-sm mt-2">Try refreshing or check admin permissions</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -180,7 +203,7 @@ export default function Movies() {
               )}
             </div>
 
-            {/* Genres - Checkbox grid */}
+            {/* Genres */}
             <div className="md:col-span-2 space-y-2">
               <Label>Genres</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

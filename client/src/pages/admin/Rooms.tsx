@@ -1,13 +1,12 @@
-// src/pages/admin/Rooms.tsx — full file with calculation
+// src/pages/admin/Rooms.tsx — POLISHED VERSION (optional)
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import api from '@/lib/axios'
-import { useAuth } from '@/context/AuthContext'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,39 +30,44 @@ type Room = {
 }
 
 export default function Rooms() {
-  const { isAuthenticated } = useAuth()
   const [rooms, setRooms] = useState<Room[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<RoomForm>({
     resolver: zodResolver(roomSchema),
     defaultValues: { name: '', rows: 8, columns: 12 },
   })
 
-  // Watch rows & columns to show live total
+  // Live total seats preview
   const rows = form.watch('rows')
   const columns = form.watch('columns')
   const totalSeats = rows && columns ? rows * columns : 0
 
   useEffect(() => {
-    if (!isAuthenticated) return
-
     const loadRooms = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const { data } = await api.get('/admin/rooms')
         setRooms(data || [])
       } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Could not load rooms')
+        const msg = err.response?.data?.error || 'Could not load rooms'
+        toast.error(msg)
+        setError(msg)
+      } finally {
+        setLoading(false)
       }
     }
     loadRooms()
-  }, [isAuthenticated])
+  }, [])
 
   const onSubmit = async (data: RoomForm) => {
     try {
       const payload = {
         ...data,
-        totalSeats: data.rows * data.columns, // calculate here
+        totalSeats: data.rows * data.columns,
       }
 
       if (editingId) {
@@ -102,6 +106,25 @@ export default function Rooms() {
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to delete room')
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-emerald-400" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-950/30 border-red-800">
+        <CardContent className="p-8 text-center text-red-300">
+          <p className="text-lg font-medium">{error}</p>
+          <p className="text-sm mt-2">Try refreshing or check admin permissions</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -151,7 +174,7 @@ export default function Rooms() {
               )}
             </div>
 
-            {/* Live preview of total */}
+            {/* Live preview */}
             <div className="md:col-span-3 text-sm text-zinc-400">
               Total seats: <span className="font-medium text-emerald-400">{totalSeats}</span>
             </div>
