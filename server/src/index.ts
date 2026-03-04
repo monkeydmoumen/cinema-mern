@@ -24,14 +24,20 @@ const server = http.createServer(app);
 =========================== */
 
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://merry-creponne-f88dd5.netlify.app"
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://merry-creponne-f88dd5.netlify.app' // ← replace if needed
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
