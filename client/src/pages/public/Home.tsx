@@ -19,8 +19,8 @@ export default function Home() {
       setLoading(true);
       try {
         const [moviesRes, showtimesRes] = await Promise.all([
-          api.get('/public/movies'),
-          api.get('/public/showtimes?limit=6'),
+          api.get('https://cinema-mern-production.up.railway.app/public/movies'),
+          api.get('https://cinema-mern-production.up.railway.app/public/showtimes?limit=6'),
         ]);
 
         setFeaturedMovies(moviesRes.data.slice(0, 8)); // more for carousel
