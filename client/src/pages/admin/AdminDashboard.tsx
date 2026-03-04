@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import api from '@/lib/axios' // ← import your configured axios instance!
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,9 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { toast } from 'sonner'   // ← correct import for sonner
-
-const API = 'http://localhost:4000/api/admin'
+import { toast } from 'sonner'
 
 type Movie = { _id: string; title: string }
 type Room = { _id: string; name: string; capacity: number }
@@ -76,14 +74,14 @@ export default function AdminDashboard() {
     },
   })
 
-  // Load initial data
+  // Load initial data — use api instance!
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [moviesRes, roomsRes, showtimesRes] = await Promise.all([
-          axios.get(`${API}/movies`),
-          axios.get(`${API}/rooms`),
-          axios.get(`${API}/showtimes`),
+          api.get('/admin/movies'),
+          api.get('/admin/rooms'),
+          api.get('/admin/showtimes'),
         ])
 
         setMovies(moviesRes.data)
@@ -100,8 +98,8 @@ export default function AdminDashboard() {
 
   const onCreateMovie = async (data: MovieForm) => {
     try {
-      await axios.post(`${API}/movies`, data)
-      const { data: updated } = await axios.get(`${API}/movies`)
+      await api.post('/admin/movies', data)
+      const { data: updated } = await api.get('/admin/movies')
       setMovies(updated)
       movieForm.reset()
       toast.success('Movie created successfully')
@@ -113,8 +111,8 @@ export default function AdminDashboard() {
 
   const onCreateRoom = async (data: RoomForm) => {
     try {
-      await axios.post(`${API}/rooms`, data)
-      const { data: updated } = await axios.get(`${API}/rooms`)
+      await api.post('/admin/rooms', data)
+      const { data: updated } = await api.get('/admin/rooms')
       setRooms(updated)
       roomForm.reset()
       toast.success('Room created successfully')
@@ -126,14 +124,14 @@ export default function AdminDashboard() {
 
   const onCreateShowtime = async (data: ShowtimeForm) => {
     try {
-      await axios.post(`${API}/showtimes`, {
+      await api.post('/admin/showtimes', {
         movie: data.movie,
         room: data.room,
         startTime: new Date(data.startTime).toISOString(),
         price: data.price,
       })
 
-      const { data: updated } = await axios.get(`${API}/showtimes`)
+      const { data: updated } = await api.get('/admin/showtimes')
       setShowtimes(updated)
       showtimeForm.reset()
       toast.success('Showtime scheduled successfully')
@@ -149,7 +147,6 @@ export default function AdminDashboard() {
         <h1 className="text-4xl font-bold tracking-tight">Cinema Admin Panel</h1>
       </header>
 
-      {/* ────────────────────────────────────────────── */}
       {/* Add Movie */}
       <Card className="bg-zinc-900/70 border-zinc-800 backdrop-blur-sm">
         <CardHeader>
@@ -213,7 +210,6 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* ────────────────────────────────────────────── */}
       {/* Add Room */}
       <Card className="bg-zinc-900/70 border-zinc-800 backdrop-blur-sm">
         <CardHeader>
@@ -259,7 +255,6 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* ────────────────────────────────────────────── */}
       {/* Schedule Showtime */}
       <Card className="bg-zinc-900/70 border-zinc-800 backdrop-blur-sm">
         <CardHeader>
@@ -358,7 +353,6 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* ────────────────────────────────────────────── */}
       {/* Overview */}
       <div className="grid md:grid-cols-3 gap-6">
         <Card className="bg-zinc-900/50 border-zinc-800">

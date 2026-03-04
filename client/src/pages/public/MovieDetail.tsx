@@ -15,7 +15,7 @@ import type { Movie, Showtime } from '@/types/cinema';
 import ShowtimesList from '@/components/public/ShowtimesList';
 import { formatDate } from 'date-fns';
 
-const SOCKET_URL = 'http://localhost:4000';
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your Railway backend
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();

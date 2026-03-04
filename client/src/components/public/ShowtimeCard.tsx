@@ -1,17 +1,17 @@
-// src/components/public/ShowtimeCard.tsx — FULL UPDATED with Socket.IO real-time + reusable fetch
+// src/components/public/ShowtimeCard.tsx — FIXED for Railway deploy
 import { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { io } from 'socket.io-client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import api from '@/lib/axios';
+import api from '@/lib/axios'; // uses your Railway baseURL
 import SeatGrid from './SeatGridticket';
 
 import type { Showtime } from '@/types/cinema';
 import { Loader2 } from 'lucide-react';
 
-const SOCKET_URL = 'http://localhost:4000'; // your backend URL
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your live Railway backend
 
 export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -20,15 +20,15 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
   const [loadingSeats, setLoadingSeats] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Reusable fetch function
+  // Reusable fetch function (uses api instance → Railway)
   const fetchSeats = useCallback(async () => {
     setLoadingSeats(true);
     try {
-      // 1. All booked seats (red for others — includes pending)
+      // All booked seats (includes pending)
       const allBookedRes = await api.get(`/public/bookings/seats/${showtime._id}`);
       setBookedSeats(new Set(allBookedRes.data));
 
-      // 2. User's own seats for THIS showtime (gold — confirmed or pending)
+      // User's own seats for THIS showtime
       const myBookingsRes = await api.get('/public/my-bookings');
       const userSeatsHere = myBookingsRes.data
         .filter((b: any) => b.showtime._id === showtime._id && (b.status === 'confirmed' || b.status === 'pending'))
@@ -46,7 +46,7 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
   useEffect(() => {
     fetchSeats();
 
-    // Socket.IO real-time listener
+    // Socket.IO — connect to live Railway backend
     const socket = io(SOCKET_URL);
 
     socket.emit('join-showtime', showtime._id);
@@ -54,7 +54,7 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
     socket.on('seats-updated', ({ showtimeId }: { showtimeId: string }) => {
       if (showtimeId === showtime._id) {
         fetchSeats();
-        toast.info('Seat availability updated in real-time');
+        toast.info('Seat availability updated live!');
       }
     });
 
@@ -96,9 +96,7 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
 
       toast.success(`Booked ${selectedSeats.length} seat(s): ${selectedSeats.join(', ')}!`);
 
-      // Refresh seats (Socket.IO will also notify others)
-      await fetchSeats();
-
+      await fetchSeats(); // Refresh after booking
       setSelectedSeats([]);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Booking failed');
@@ -145,8 +143,8 @@ export default function ShowtimeCard({ showtime }: { showtime: Showtime }) {
       <SeatGrid
         rows={rows}
         columns={columns}
-        bookedSeats={bookedSeats}           // red = booked by anyone else (includes pending)
-        mySeats={myBookedSeats}             // gold = user's seats (pending or confirmed)
+        bookedSeats={bookedSeats}
+        mySeats={myBookedSeats}
         initialSelected={selectedSeats}
         onSelectionChange={setSelectedSeats}
         disabled={bookingLoading}

@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-const SOCKET_URL = 'http://localhost:4000'; // your backend URL
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your live Railway backend
 
 interface SeatGridProps {
   rows: number;

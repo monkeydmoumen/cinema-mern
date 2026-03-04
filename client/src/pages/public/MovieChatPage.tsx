@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const SOCKET_URL = 'http://localhost:4000';
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your Railway backend
 
 type Message = {
   _id: string;
