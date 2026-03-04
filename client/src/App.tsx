@@ -22,7 +22,7 @@ import MyTickets from './pages/public/MyTickets';
 import Home from './pages/public/Home';
 import MovieChatPage from './pages/public/MovieChatPage';
 
-const SOCKET_URL = 'http://localhost:4000'; // your backend URL
+const SOCKET_URL = 'https://cinema-mern-production.up.railway.app'; // ← your Railway backend
 
 function App() {
   useEffect(() => {
